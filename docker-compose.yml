@@ -1,0 +1,33 @@
+services:
+  # 1. High-Performance Kernel NAT & DHCP Bridge
+  wlan-bridge:
+    build: .
+    container_name: wlan-bridge
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - WLAN_IF=wlan0              # WLAN Interface des Pi (Quelle / Internet)
+      - LAN_IF=eth0                # LAN Port des Pi (Ausgabe an Endgeräte)
+      - LAN_IP=172.16.0.1         # Eigene IP des Pi am LAN-Port
+      - LAN_CIDR=24               # Subnetzmaske (/24 = 255.255.255.0)
+      - DHCP_RANGE_START=172.16.0.10  # Start des DHCP-Pools für LAN-Clients
+      - DHCP_RANGE_END=172.16.0.100   # Ende des DHCP-Pools
+      - DHCP_LEASE=12h             # Gültigkeitsdauer der DHCP-Vergabe
+      - DNS_SERVERS=1.1.1.1,8.8.8.8    # Upstream DNS-Server
+
+  # 2. Next.js Web Dashboard (Ping, WLAN-Speed, Durchsatz & LAN-Clients)
+  dashboard:
+    build: ./dashboard
+    container_name: wlan-bridge-dashboard
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      - wlan-bridge
+    environment:
+      - WLAN_IF=wlan0
+      - LAN_IF=eth0
+      - PING_TARGET=1.1.1.1
+      - PORT=3000
